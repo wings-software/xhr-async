@@ -1,0 +1,11 @@
+{
+    "eslint.enable": true,
+    "search.exclude": {
+        "**/node_modules": true,
+        "build/": false
+    },
+    "files.exclude": {
+        "**/node_modules": true,
+        "npm-debug.log*": true
+    }
+}
