@@ -1,16 +1,16 @@
 {
-  "name": "xhr-fetch",
-  "version": "0.0.1",
-  "description": "Async/await ajax APIs on top of axios",
-  "main": "dist/xhr-fetch.js",
-  "types": "dist/xhr-fetch.d.ts",
+  "name": "xhr-async",
+  "version": "1.0.0",
+  "description": "Async/await ajax APIs with golang-like error handling, built on top of axios",
+  "main": "dist/xhr-async.js",
+  "types": "dist/xhr-async.d.ts",
   "scripts": {
-    "build": "npm run clean && tsc src/xhr-fetch.ts --outDir ./dist --sourceMap --target ES5 --lib ES2015 --declaration",
+    "build": "npm run clean && tsc src/xhr-async.ts --outDir ./dist --sourceMap --target ES5 --lib ES2015 --declaration",
     "dev": "tsc",
     "clean": "rm -rf ./build ./dist",
-    "test": "npm run dev && ava build/*.spec.js",
+    "test": "npm run dev && ava --verbose build/*.spec.js",
     "format": "prettier --single-quote --no-semi --jsx-bracket-same-line --write src/*.{js,ts}",
-    "watch": "chokidar 'src/**/*.*' -c 'pm run test'"
+    "watch": "chokidar 'src/**/*.*' -c 'npm run test'"
   },
   "keywords": [],
   "author": "Tan Nhu",
