@@ -9,9 +9,7 @@ test('defaults', async t => {
 
 test('should not raise exception when server is not found', async t => {
   try {
-    const { data, status, error, statusText } = await xhr.get(
-      'https://notavalidurl.com1/'
-    )
+    const { data, status, error, statusText } = await xhr.get('https://notavalidurl.com1/')
     t.is(status, 0)
   } catch (error) {
     t.fail('request should not raise exception, ever.')
@@ -20,9 +18,7 @@ test('should not raise exception when server is not found', async t => {
 
 test('status code should be legit', async t => {
   const code = 418
-  const { data, status, error, statusText } = await xhr.get(
-    'https://httpbin.org/status/' + code
-  )
+  const { data, status, error, statusText } = await xhr.get('https://httpbin.org/status/' + code)
 
   t.is(status, code)
 })
@@ -95,7 +91,7 @@ test('xhr.abort() should work', async t => {
 
   await sleep(1)
 
-  t.truthy(xhr) // during the request is being made, xhr should be set
+  t.truthy(rootXhr) // during the request is being made, xhr should be set
 
   if (rootXhr) {
     rootXhr.abort()
@@ -109,15 +105,31 @@ test('xhr.abort() should work', async t => {
 
 test('should unset xhr when an exception happens', async t => {
   let rootXhr
-  const {
-    data,
-    status,
-    error,
-    statusText
-  } = await xhr.get('https://notavalidurl.com1/', {
+  const { data, status, error, statusText } = await xhr.get('https://notavalidurl.com1/', {
     xhr: _xhr => (rootXhr = _xhr)
   })
 
   t.is(status, 0)
   t.is(rootXhr, undefined)
+})
+
+test('xhr.group should work', async t => {
+  const group = 'httpbin'
+  let rootXhr
+
+  const response = xhr.get('https://httpbin.org/delay/2', {
+    group: group,
+    xhr: _xhr => (rootXhr = _xhr)
+  })
+
+  await sleep(1) // wait a bit to initialize the request
+
+  t.truthy(rootXhr) // during the request is being made, xhr should be set
+
+  xhr.abort(group) // abort the whole group
+
+  const { status } = await response
+
+  t.is(status, 0)
+  t.is(rootXhr, undefined) // abort() from xhr.abort(group) should also unset xhr
 })

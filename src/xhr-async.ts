@@ -1,23 +1,20 @@
-import axios, {
-  AxiosRequestConfig,
-  AxiosInterceptorManager,
-  AxiosResponse,
-  AxiosPromise
-} from 'axios'
+import axios, { AxiosRequestConfig, AxiosInterceptorManager, AxiosResponse, AxiosPromise } from 'axios'
 
 /**
  * Key-Value object type.
  */
-export interface KVO {
-  [key: string]: any
+export interface KVO<T = any> {
+  [key: string]: T
 }
 
 /**
  * AbortableXHR, used to set and unset xhr object for fetch cancellation.
  */
-export type AbortableXhr = undefined | {
-  abort() : void
-}
+export type AbortableXhr =
+  | undefined
+  | {
+      abort(): void
+    }
 
 /**
  * XHR Request.
@@ -49,6 +46,9 @@ export interface XhrResponse {
  */
 export interface XhrOptions extends AxiosRequestConfig {
   xhr?: (xhr: AbortableXhr) => void
+
+  // xhr group, used to terminate a batch of xhr requests
+  group?: string
 }
 
 /**
@@ -63,6 +63,12 @@ export interface XhrBeforeInterceptor {
  */
 export interface XhrAfterInterceptor {
   (args: XhrResponse): void
+}
+
+enum STATUS_CODE {
+  ABORTED = -1,
+  TIMEOUT = -2,
+  SERVER_UNREACHABLE = -3
 }
 
 /**
@@ -89,13 +95,7 @@ const xhrBefore = (interceptor: XhrBeforeInterceptor) => {
 const xhrAfter = (interceptor: XhrAfterInterceptor) => {
   axios.interceptors.response.use(
     (response: any) => {
-      const {
-        status,
-        statusText,
-        headers: responseHeaders,
-        data: responseData,
-        config
-      } = response
+      const { status, statusText, headers: responseHeaders, data: responseData, config } = response
       const { url, params, headers, data } = config
 
       interceptor({
@@ -113,23 +113,46 @@ const xhrAfter = (interceptor: XhrAfterInterceptor) => {
 }
 
 //
+// Xhr groups
+//
+const xhrGroups: KVO<Array<AbortableXhr>> = {}
+
+//
 // Intercept axios request to inject cancel token and set/unset xhr.
 //
 axios.interceptors.request.use(
   (config: XhrOptions) => {
-    const { xhr } = config
+    const { xhr, group } = config
 
-    if (xhr) {
+    if (xhr || group) {
       config.cancelToken = new axios.CancelToken(cancel => {
-        // call xhr so caller has a change to save the xhr object with abort() capability
-        xhr({
+        const abort: AbortableXhr = {
           abort: () => {
             cancel('TERMINATED BY USER') // TODO: Make it somehow cancel return request object and can be captured by APIs
-            xhr(undefined) // unset xhr
+
+            if (xhr) {
+              xhr(undefined) // unset xhr
+            }
+
+            if (group) {
+              const xhrGroup = xhrGroups[group]
+              xhrGroup.splice(xhrGroup.indexOf(abort), 1)
+            }
           }
-        })
+        }
+
+        if (group) {
+          const xhrGroup = (xhrGroups[group] = xhrGroups[group] || [])
+          xhrGroup.push(abort)
+        }
+
+        // call xhr so caller has a change to save the xhr object with abort() capability
+        if (xhr) {
+          xhr(abort)
+        }
       })
     }
+
     return config
   },
   (error: any) => Promise.reject(error)
@@ -140,11 +163,15 @@ axios.interceptors.request.use(
 //
 axios.interceptors.response.use(
   (response: any) => {
-    const { xhr } = response.config as XhrOptions
+    const { xhr, group } = response.config as XhrOptions
 
     // call xhr() to pass undefined so caller has a chance to set its xhr to undefined
     if (xhr) {
       xhr(undefined)
+    }
+
+    if (group) {
+      // TODO Remove request from xhrGroups
     }
 
     return response
@@ -152,20 +179,11 @@ axios.interceptors.response.use(
   (error: any) => Promise.reject(error)
 )
 
-async function get(
-  url: string,
-  options: XhrOptions = {}
-): Promise<XhrResponse> {
+async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> {
   options.url = url
 
   try {
-    const {
-      status,
-      statusText,
-      headers: responseHeaders,
-      data: responseData,
-      config
-    } = await axios(options)
+    const { status, statusText, headers: responseHeaders, data: responseData, config } = await axios(options)
     const { url, params, data, headers } = config
 
     return {
@@ -177,9 +195,7 @@ async function get(
     }
   } catch (error) {
     const { response } = error
-    const statusText = (response && response.statusText) || error.toString()
     const status = (response && response.status) || 0
-    const responseData = response && response.data
     const { xhr } = options
     const config = (response && response.config) || error.config
     const { params = undefined, data = undefined, headers = {} } = config || {}
@@ -190,27 +206,39 @@ async function get(
       xhr(undefined) // unset xhr
     }
 
+    // TODO Put reason(s) into error
+    // error: {
+    //  timeout | aborted | unreachable | hostNotFound | ...
+    // }
+
     return {
       status,
-      statusText,
+      statusText: (response && response.statusText) || error.toString(),
       error,
-      data: responseData,
+      data: response && response.data,
       request: { url: url, params, data, headers }
     }
   }
 }
 
+
+
 export function requestFor(method: string) {
-  return async function(
-    url: string,
-    options: XhrOptions = {}
-  ): Promise<XhrResponse> {
+  return async function(url: string, options: XhrOptions = {}): Promise<XhrResponse> {
     options.method = method
     return get(url, options)
   }
 }
 
-const xhr = {
+function abort(group: string) {
+  const xhrGroup = xhrGroups[group]
+
+  if (xhrGroup) {
+    xhrGroup.forEach(xhr => xhr && xhr.abort())
+  }
+}
+
+export default {
   get,
   post: requestFor('POST'),
   put: requestFor('PUT'),
@@ -221,6 +249,8 @@ const xhr = {
   trace: requestFor('TRACE'),
   patch: requestFor('PATCH'),
 
+  abort: abort,
+
   // @see https://github.com/mzabriskie/axios#global-axios-defaults
   defaults: axios.defaults,
 
@@ -228,4 +258,12 @@ const xhr = {
   after: xhrAfter
 }
 
-export default xhr
+//
+// TODO:
+//
+// 1- Differentiate status codes: timeout, abort, network unreachable, etc (currently all 0)
+//    Use a key for each request, store config, then clean up when things are done?
+// 2- Abort() should give back request info
+// 3- More tests
+// 4- README
+// 5- Retry (if failed then retry N times)

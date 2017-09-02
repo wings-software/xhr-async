@@ -9,7 +9,7 @@
     "dev": "tsc",
     "clean": "rm -rf ./build ./dist",
     "test": "npm run dev && ava --verbose build/*.spec.js",
-    "format": "prettier --single-quote --no-semi --jsx-bracket-same-line --write src/*.{js,ts}",
+    "format": "prettier src/*.{js,ts}",
     "watch": "chokidar 'src/**/*.*' -c 'npm run test'"
   },
   "keywords": [],
@@ -22,7 +22,7 @@
     "@types/node": "latest",
     "ava": "^0.22.0",
     "chokidar-cli": "latest",
-    "prettier": "^1.5.3",
+    "prettier": "^1.6.1",
     "typescript": "latest"
   }
 }
