@@ -49,6 +49,9 @@ export interface XhrOptions extends AxiosRequestConfig {
 
   // xhr group, used to terminate a batch of xhr requests
   group?: string
+
+  // retry if failed
+  retry?: number
 }
 
 /**
@@ -220,8 +223,6 @@ async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> 
     }
   }
 }
-
-
 
 export function requestFor(method: string) {
   return async function(url: string, options: XhrOptions = {}): Promise<XhrResponse> {
