@@ -133,3 +133,27 @@ test('xhr.group should work', async t => {
   t.is(status, 0)
   t.is(rootXhr, undefined) // abort() from xhr.abort(group) should also unset xhr
 })
+
+
+test('xhr.retry', async t => {
+  const group = 'httpbin'
+  let rootXhr: AbortableXhr
+
+  const response = xhr.get('https://httpbin.org/delay/2', {
+    retry: 1,
+    xhr: _xhr => (rootXhr = _xhr)
+  })
+
+  await sleep(1) // wait a bit to initialize the request
+
+  // Terminate the request, another attempt should be made
+  if (rootXhr) {
+    rootXhr.abort()
+  }
+
+  const { status, data } = await response
+
+  t.is(status, 200)
+  t.truthy(data)
+  t.truthy(data.headers)
+})

@@ -197,6 +197,11 @@ async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> 
       request: { url, params, data, headers }
     }
   } catch (error) {
+    if (options.retry && options.retry > 0) {
+      options.retry--
+      return get(url, options)
+    }
+
     const { response } = error
     const status = (response && response.status) || 0
     const { xhr } = options
