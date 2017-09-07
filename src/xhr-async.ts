@@ -38,6 +38,11 @@ export interface XhrResponse {
   request: XhrRequest
 }
 
+export interface XhrRetry {
+  count: number
+  wait: (step: number) => number
+}
+
 /**
  * Request Options extends AxiosRequestConfig with xhr setter support.
  * @export
@@ -51,7 +56,7 @@ export interface XhrOptions extends AxiosRequestConfig {
   group?: string
 
   // retry if failed
-  retry?: number
+  retry?: number | XhrRetry
 }
 
 /**
@@ -197,7 +202,7 @@ async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> 
       request: { url, params, data, headers }
     }
   } catch (error) {
-    if (options.retry && options.retry > 0) {
+    if (options.retry && typeof(options.retry) === 'number' && options.retry > 0) {
       options.retry--
       return get(url, options)
     }
@@ -270,6 +275,8 @@ export default {
 // 1- Differentiate status codes: timeout, abort, network unreachable, etc (currently all 0)
 //    Use a key for each request, store config, then clean up when things are done?
 // 2- Abort() should give back request info
-// 3- More tests
+// 3- More tests (binary, stream, etc)
 // 4- README
-// 5- Retry (if failed then retry N times)
+// [x] 5- Retry (if failed then retry N times)
+// - Retry strategy (wait for N ms at first attempt, N*retryCount, etc...)
+// - Calling abort() should also terminate retrying? Or abort({ skipRetry: true })
