@@ -8,9 +8,9 @@ export interface KVO<T = any> {
 }
 
 /**
- * AbortableXHR, used to set and unset xhr object for fetch cancellation.
+ * RequestRef is used for cancellation.
  */
-export type AbortableXhr =
+export type RequestRef =
   | undefined
   | {
       abort(): void
@@ -50,7 +50,7 @@ export interface XhrRetry {
  * @extends {AxiosRequestConfig}
  */
 export interface XhrOptions extends AxiosRequestConfig {
-  xhr?: (xhr: AbortableXhr) => void
+  ref?: (request: RequestRef) => void
 
   // xhr group, used to terminate a batch of xhr requests
   group?: string
@@ -123,23 +123,23 @@ const xhrAfter = (interceptor: XhrAfterInterceptor) => {
 //
 // Xhr groups
 //
-const xhrGroups: KVO<Array<AbortableXhr>> = {}
+const xhrGroups: KVO<Array<RequestRef>> = {}
 
 //
 // Intercept axios request to inject cancel token and set/unset xhr.
 //
 axios.interceptors.request.use(
   (config: XhrOptions) => {
-    const { xhr, group } = config
+    const { ref, group } = config
 
-    if (xhr || group) {
+    if (ref || group) {
       config.cancelToken = new axios.CancelToken(cancel => {
-        const abort: AbortableXhr = {
+        const abort: RequestRef = {
           abort: () => {
             cancel('TERMINATED BY USER') // TODO: Make it somehow cancel return request object and can be captured by APIs
 
-            if (xhr) {
-              xhr(undefined) // unset xhr
+            if (ref) {
+              ref(undefined) // unset xhr
             }
 
             if (group) {
@@ -155,8 +155,8 @@ axios.interceptors.request.use(
         }
 
         // call xhr so caller has a change to save the xhr object with abort() capability
-        if (xhr) {
-          xhr(abort)
+        if (ref) {
+          ref(abort)
         }
       })
     }
@@ -171,11 +171,11 @@ axios.interceptors.request.use(
 //
 axios.interceptors.response.use(
   (response: any) => {
-    const { xhr, group } = response.config as XhrOptions
+    const { ref, group } = response.config as XhrOptions
 
     // call xhr() to pass undefined so caller has a chance to set its xhr to undefined
-    if (xhr) {
-      xhr(undefined)
+    if (ref) {
+      ref(undefined)
     }
 
     if (group) {
@@ -209,14 +209,14 @@ async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> 
 
     const { response } = error
     const status = (response && response.status) || 0
-    const { xhr } = options
+    const { ref } = options
     const config = (response && response.config) || error.config
     const { params = undefined, data = undefined, headers = {} } = config || {}
 
     // TODO abort() does not give any object back, the request object becomes useless
 
-    if (xhr) {
-      xhr(undefined) // unset xhr
+    if (ref) {
+      ref(undefined) // unset xhr
     }
 
     // TODO Put reason(s) into error
@@ -277,6 +277,6 @@ export default {
 // 2- Abort() should give back request info
 // 3- More tests (binary, stream, etc)
 // 4- README
-// [x] 5- Retry (if failed then retry N times)
+// 5- Retry (if failed then retry N times)
 // - Retry strategy (wait for N ms at first attempt, N*retryCount, etc...)
 // - Calling abort() should also terminate retrying? Or abort({ skipRetry: true })

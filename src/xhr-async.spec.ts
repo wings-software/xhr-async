@@ -1,4 +1,4 @@
-import xhr, { AbortableXhr } from './xhr-async'
+import xhr, { RequestRef } from './xhr-async'
 import test from 'ava'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -54,101 +54,100 @@ test('should set header correctly with before()', async t => {
   }
 })
 
-test('should set xhr properly', async t => {
-  let rootXhr
+test('should set request object properly', async t => {
+  let request
 
   const { data, status } = await xhr.get('https://httpbin.org/', {
-    xhr: xhr => (rootXhr = xhr)
+    ref: req => request = req
   })
 
   t.is(status, 200)
-  t.is(rootXhr, undefined) // xhr should be unset to undefined after the request
+  t.is(request, undefined) // xhr should be unset to undefined after the request
 })
 
-test('xhr should not be null during the request', async t => {
-  let rootXhr
+test('ref should not be null during the request', async t => {
+  let rootRequest
 
   const response = xhr.get('https://httpbin.org/delay/2', {
-    xhr: xhr => (rootXhr = xhr)
+    ref: req => rootRequest = req
   })
 
   await sleep(1)
 
-  t.truthy(rootXhr) // during the request ie being made, xhr should be set
+  t.truthy(rootRequest) // during the request ie being made, xhr should be set
 
   const { status } = await response
 
   t.is(status, 200)
-  t.is(rootXhr, undefined) // when the request is fulfilled, xhr should be unset
+  t.is(rootRequest, undefined) // when the request is fulfilled, xhr should be unset
 })
 
-test('xhr.abort() should work', async t => {
-  let rootXhr: AbortableXhr
+test('ref.abort() should work', async t => {
+  let rootReq: RequestRef
 
   const response = xhr.get('https://httpbin.org/delay/2', {
-    xhr: xhr => (rootXhr = xhr)
+    ref: req => rootReq = req
   })
 
   await sleep(1)
 
-  t.truthy(rootXhr) // during the request is being made, xhr should be set
+  t.truthy(rootReq) // during the request is being made, xhr should be set
 
-  if (rootXhr) {
-    rootXhr.abort()
+  if (rootReq) {
+    rootReq.abort()
   }
 
   const { status, ...others } = await response
 
   t.is(status, 0)
-  t.is(rootXhr, undefined) // abort() should also unset xhr
+  t.is(rootReq, undefined) // abort() should also unset xhr
 })
 
-test('should unset xhr when an exception happens', async t => {
-  let rootXhr
+test('should unset ref when an exception happens', async t => {
+  let rootReq
   const { data, status, error, statusText } = await xhr.get('https://notavalidurl.com1/', {
-    xhr: _xhr => (rootXhr = _xhr)
+    ref: req => rootReq = req
   })
 
   t.is(status, 0)
-  t.is(rootXhr, undefined)
+  t.is(rootReq, undefined)
 })
 
 test('xhr.group should work', async t => {
   const group = 'httpbin'
-  let rootXhr
+  let request
 
   const response = xhr.get('https://httpbin.org/delay/2', {
     group: group,
-    xhr: _xhr => (rootXhr = _xhr)
+    ref: req => request = req
   })
 
   await sleep(1) // wait a bit to initialize the request
 
-  t.truthy(rootXhr) // during the request is being made, xhr should be set
+  t.truthy(request) // during the request is being made, xhr should be set
 
   xhr.abort(group) // abort the whole group
 
   const { status } = await response
 
   t.is(status, 0)
-  t.is(rootXhr, undefined) // abort() from xhr.abort(group) should also unset xhr
+  t.is(request, undefined) // abort() from xhr.abort(group) should also unset xhr
 })
-
 
 test('xhr.retry', async t => {
   const group = 'httpbin'
-  let rootXhr: AbortableXhr
+  let request: RequestRef
 
   const response = xhr.get('https://httpbin.org/delay/2', {
     retry: 1,
-    xhr: _xhr => (rootXhr = _xhr)
+    ref: req => request = req
   })
 
   await sleep(1) // wait a bit to initialize the request
 
   // Terminate the request, another attempt should be made
-  if (rootXhr) {
-    rootXhr.abort()
+  if (request) {
+    request.abort()
   }
 
   const { status, data } = await response
