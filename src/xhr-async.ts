@@ -13,7 +13,8 @@ export interface KVO<T = any> {
 export type RequestRef =
   | undefined
   | {
-      abort(): void
+      abort(): void       // abort the request
+      forceRetry(): void  // skip current retry waiting strategy and retry the request immediately
     }
 
 /**
@@ -38,10 +39,7 @@ export interface XhrResponse {
   request: XhrRequest
 }
 
-export interface XhrRetry {
-  count: number
-  wait: (step: number) => number
-}
+export type XhrRetryStrategy = (params: { counter: number, lastStatus: number }) => number
 
 /**
  * Request Options extends AxiosRequestConfig with xhr setter support.
@@ -56,28 +54,27 @@ export interface XhrOptions extends AxiosRequestConfig {
   group?: string
 
   // retry if failed
-  retry?: number | XhrRetry
+  retry?: number | XhrRetryStrategy
 }
 
 /**
  * Before Interceptor.
  */
-export interface XhrBeforeInterceptor {
-  (args: XhrRequest): void
-}
+export type XhrBeforeInterceptor = (args: XhrRequest) => void
 
 /**
  * After Interceptor.
  */
-export interface XhrAfterInterceptor {
-  (args: XhrResponse): void
-}
+export type XhrAfterInterceptor = (args: XhrResponse) => void
 
+// TODO Use these status codes
 enum STATUS_CODE {
   ABORTED = -1,
   TIMEOUT = -2,
   SERVER_UNREACHABLE = -3
 }
+
+const STOP_RETRYING = -1
 
 /**
  * Inject an interceptor before a request is being made.
@@ -123,45 +120,54 @@ const xhrAfter = (interceptor: XhrAfterInterceptor) => {
 //
 // Xhr groups
 //
-const xhrGroups: KVO<Array<RequestRef>> = {}
+const xhrGroups: KVO<RequestRef[]> = {}
 
 //
 // Intercept axios request to inject cancel token and set/unset xhr.
 //
 axios.interceptors.request.use(
-  (config: XhrOptions) => {
-    const { ref, group } = config
+  (options: XhrOptions) => {
+    const { ref, group, retry } = options
 
     if (ref || group) {
-      config.cancelToken = new axios.CancelToken(cancel => {
-        const abort: RequestRef = {
+      options.cancelToken = new axios.CancelToken(cancel => {
+        const requestRef: RequestRef = {
           abort: () => {
-            cancel('TERMINATED BY USER') // TODO: Make it somehow cancel return request object and can be captured by APIs
+            // TODO: Make it somehow cancel return request object and can be captured by APIs
+            cancel('TERMINATED BY USER')
 
             if (ref) {
-              ref(undefined) // unset xhr
+              ref(undefined) // unset xhr reference
             }
 
             if (group) {
               const xhrGroup = xhrGroups[group]
-              xhrGroup.splice(xhrGroup.indexOf(abort), 1)
+              xhrGroup.splice(xhrGroup.indexOf(requestRef), 1)
+            }
+          },
+
+          forceRetry: () => {
+            const retryStrategy = retry as KVO
+
+            if (retryStrategy && typeof(retryStrategy) !== 'number' && retryStrategy.forceRetry) {
+              retryStrategy.forceRetry()
             }
           }
         }
 
         if (group) {
           const xhrGroup = (xhrGroups[group] = xhrGroups[group] || [])
-          xhrGroup.push(abort)
+          xhrGroup.push(requestRef)
         }
 
-        // call xhr so caller has a change to save the xhr object with abort() capability
+        // call xhr so caller has a change to save the xhr object with abort()/retry() capability
         if (ref) {
-          ref(abort)
+          ref(requestRef)
         }
       })
     }
 
-    return config
+    return options
   },
   (error: any) => Promise.reject(error)
 )
@@ -173,12 +179,13 @@ axios.interceptors.response.use(
   (response: any) => {
     const { ref, group } = response.config as XhrOptions
 
-    // call xhr() to pass undefined so caller has a chance to set its xhr to undefined
+    // call ref() to pass undefined so caller has a chance to set its xhr reference to undefined
     if (ref) {
       ref(undefined)
     }
 
     if (group) {
+      console.info('GROUP', group)
       // TODO Remove request from xhrGroups
     }
 
@@ -192,7 +199,15 @@ async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> 
 
   try {
     const { status, statusText, headers: responseHeaders, data: responseData, config } = await axios(options)
-    const { url, params, data, headers } = config
+    const { params, data, headers } = config
+
+    // Clean up delayFn if it exists
+    const { retry } = options
+    const delayFn = retry && typeof(retry) !== 'number' && (retry as KVO)
+    if (delayFn) {
+      delete delayFn.counter
+      delete delayFn.forceRetry
+    }
 
     return {
       status,
@@ -202,13 +217,47 @@ async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> 
       request: { url, params, data, headers }
     }
   } catch (error) {
-    if (options.retry && typeof(options.retry) === 'number' && options.retry > 0) {
-      options.retry--
-      return get(url, options)
-    }
-
     const { response } = error
     const status = (response && response.status) || 0
+
+    if (options.retry) {
+      if (typeof(options.retry) === 'number' && options.retry > 0) {
+        options.retry--
+        return get(url, options)
+      } else {
+        // trick to add extra counter and timeoutId into delayFn
+        const delayFn = (options.retry as XhrRetryStrategy & KVO)
+        const { counter, timeoutId } = delayFn
+        delayFn.counter = (counter || 0) + 1
+
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
+
+        const delay = delayFn({ counter: delayFn.counter, lastStatus: status })
+
+        if (delay >= 0) {
+          return new Promise<XhrResponse>(resolve => {
+            delayFn.timeoutId = setTimeout(_ => {
+              delete delayFn.timeoutId
+              delete delayFn.forceRetry
+
+              resolve(get(url, options))
+            }, delay)
+
+            delayFn.forceRetry = () => {
+              clearTimeout(delayFn.timeoutId)
+              delete delayFn.timeoutId
+              resolve(get(url, options))
+            }
+          })
+        } else {
+          delete delayFn.counter
+          delete delayFn.forceRetry
+        }
+      }
+    }
+
     const { ref } = options
     const config = (response && response.config) || error.config
     const { params = undefined, data = undefined, headers = {} } = config || {}
@@ -229,13 +278,13 @@ async function get(url: string, options: XhrOptions = {}): Promise<XhrResponse> 
       statusText: (response && response.statusText) || error.toString(),
       error,
       data: response && response.data,
-      request: { url: url, params, data, headers }
+      request: { url, params, data, headers }
     }
   }
 }
 
 export function requestFor(method: string) {
-  return async function(url: string, options: XhrOptions = {}): Promise<XhrResponse> {
+  return async (url: string, options: XhrOptions = {}): Promise<XhrResponse> => {
     options.method = method
     return get(url, options)
   }
@@ -246,6 +295,7 @@ function abort(group: string) {
 
   if (xhrGroup) {
     xhrGroup.forEach(xhr => xhr && xhr.abort())
+    delete xhrGroups[group]
   }
 }
 
@@ -260,13 +310,15 @@ export default {
   trace: requestFor('TRACE'),
   patch: requestFor('PATCH'),
 
-  abort: abort,
+  abort,
 
   // @see https://github.com/mzabriskie/axios#global-axios-defaults
   defaults: axios.defaults,
 
   before: xhrBefore,
-  after: xhrAfter
+  after: xhrAfter,
+
+  STOP_RETRYING
 }
 
 //

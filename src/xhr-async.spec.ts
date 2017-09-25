@@ -1,4 +1,4 @@
-import xhr, { RequestRef } from './xhr-async'
+import xhr, { RequestRef, XhrRetryStrategy, KVO } from './xhr-async'
 import test from 'ava'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -118,7 +118,7 @@ test('xhr.group should work', async t => {
   let request
 
   const response = xhr.get('https://httpbin.org/delay/2', {
-    group: group,
+    group,
     ref: req => request = req
   })
 
@@ -134,8 +134,7 @@ test('xhr.group should work', async t => {
   t.is(request, undefined) // abort() from xhr.abort(group) should also unset xhr
 })
 
-test('xhr.retry', async t => {
-  const group = 'httpbin'
+test('xhr.retry should work with with abort()', async t => {
   let request: RequestRef
 
   const response = xhr.get('https://httpbin.org/delay/2', {
@@ -155,4 +154,54 @@ test('xhr.retry', async t => {
   t.is(status, 200)
   t.truthy(data)
   t.truthy(data.headers)
+})
+
+test.todo('group should be cleaned when request is done')
+
+test('xhr.retry with delay strategy', async t => {
+  let count = 0
+  const retryStrategy: XhrRetryStrategy & KVO = ({ counter, lastStatus }) => {
+    count = counter
+    return counter < 2 ? 100 * counter : xhr.STOP_RETRYING
+  }
+
+  const { status, data } = await xhr.get('https://httpbin.org/status/401', {
+    retry: retryStrategy
+  })
+
+  t.is(status, 401)
+  t.is(count, 2)
+  t.falsy(retryStrategy.counter)
+  t.falsy(retryStrategy.timeoutId)
+})
+
+test('forceRetry should override delay strategy', async t => {
+  let count = 0
+  let request: RequestRef
+  const WAIT_TIME = 10000
+  const now = +new Date()
+  const retryStrategy: XhrRetryStrategy & KVO = ({ counter, lastStatus }) => {
+    count = counter
+    return counter === 1 ? WAIT_TIME : (counter <= 4 ? 0 : xhr.STOP_RETRYING) // stop after 5 tries
+  }
+
+  const response = xhr.get('https://httpbin.org/status/401', {
+    retry: retryStrategy,
+    ref: req => request = req
+  })
+
+  // wait a bit for the first attempt to finish (hopefully httpbin returns the first response on-time)
+  await sleep(2000)
+
+  if (request) {
+    request.forceRetry() // retry immediately instead of waiting to WAIT_TIME ms after the first attempt
+  }
+
+  const { status, data } = await response
+
+  t.is(status, 401)
+  t.is(count, 5)
+  t.true(+new Date() - now < WAIT_TIME)
+  t.falsy(retryStrategy.counter)
+  t.falsy(retryStrategy.timeoutId)
 })
