@@ -1,4 +1,4 @@
-import xhr, { RequestRef, XhrRetryStrategy, KVO } from './xhr-async'
+import xhr, { XhrRef, XhrRetryStrategy, KVO, __internal__ } from './xhr-async'
 import test from 'ava'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -83,9 +83,16 @@ test('ref should not be null during the request', async t => {
 })
 
 test('ref.abort() should work', async t => {
-  let rootReq: RequestRef
+  let rootReq: XhrRef
+  const url = 'https://httpbin.org/delay/2'
+  const headers = { foo: 'bar', hello: 'world' }
+  const data = [1, 2, 3, 4]
+  const params = { a: 1, b: 2, c: 3 }
 
-  const response = xhr.get('https://httpbin.org/delay/2', {
+  const response = xhr.get(url, {
+    headers,
+    params,
+    data,
     ref: req => rootReq = req
   })
 
@@ -97,10 +104,19 @@ test('ref.abort() should work', async t => {
     rootReq.abort()
   }
 
-  const { status, ...others } = await response
+  const { status, request: { url: _url, params: _params, data: _data, headers: _headers } } = await response
 
-  t.is(status, 0)
+  t.is(status, xhr.ABORTED)
   t.is(rootReq, undefined) // abort() should also unset xhr
+  t.deepEqual(url, _url)
+  t.deepEqual(params, _params)
+  t.deepEqual(data, JSON.parse(_data))
+
+  Object.keys(headers).forEach(key => {
+    if (_headers && !_headers[key]) {
+      t.fail(`header (${key}) does not exist in request header`)
+    }
+  })
 })
 
 test('should unset ref when an exception happens', async t => {
@@ -109,7 +125,7 @@ test('should unset ref when an exception happens', async t => {
     ref: req => rootReq = req
   })
 
-  t.is(status, 0)
+  t.is(status, xhr.UNREACHABLE)
   t.is(rootReq, undefined)
 })
 
@@ -130,12 +146,12 @@ test('xhr.group should work', async t => {
 
   const { status } = await response
 
-  t.is(status, 0)
+  t.is(status, xhr.ABORTED)
   t.is(request, undefined) // abort() from xhr.abort(group) should also unset xhr
 })
 
 test('xhr.retry should work with with abort()', async t => {
-  let request: RequestRef
+  let request: XhrRef
 
   const response = xhr.get('https://httpbin.org/delay/2', {
     retry: 1,
@@ -156,7 +172,54 @@ test('xhr.retry should work with with abort()', async t => {
   t.truthy(data.headers)
 })
 
-test.todo('group should be cleaned when request is done')
+test('status should be TIMEOUT when timeout happens', async t => {
+  const { status } = await xhr.get('https://httpbin.org/delay/2', {
+    timeout: 100
+  })
+
+  t.is(status, xhr.TIMEOUT)
+})
+
+test('group should be cleaned when request is done', async t => {
+  const group = 'httpbin1'
+
+  const { status } = await xhr.get('https://httpbin.org/delay/1', {
+    group
+  })
+
+  t.is(status, 200)
+  t.falsy(__internal__.xhrGroups[group])
+})
+
+test('abort with ignoreRetry should kill all retries', async t => {
+  let count = 0
+  let request: XhrRef
+  const retryStrategy: XhrRetryStrategy & KVO = ({ counter, lastStatus }) => {
+    count = counter
+    return counter < 2 ? counter * 10000 : xhr.STOP_RETRYING
+  }
+
+  const response = xhr.get('https://httpbin.org/status/401', {
+    retry: retryStrategy,
+    ref: req => request = req
+  })
+
+  // hopefully the first attempt has response from httpbin, otherwise
+  // this test fails because abort() terminates the first request, not the
+  // retrying request
+  await sleep(2500)
+
+  if (request) {
+    request.abort({ ignoreRetry: true })
+  }
+
+  const { status } = await response
+
+  t.is(status, xhr.ABORTED)
+  t.is(count, 1)
+  t.falsy(retryStrategy.counter)
+  t.falsy(retryStrategy.timeoutId)
+})
 
 test('xhr.retry with delay strategy', async t => {
   let count = 0
@@ -177,7 +240,7 @@ test('xhr.retry with delay strategy', async t => {
 
 test('forceRetry should override delay strategy', async t => {
   let count = 0
-  let request: RequestRef
+  let request: XhrRef
   const WAIT_TIME = 10000
   const now = +new Date()
   const retryStrategy: XhrRetryStrategy & KVO = ({ counter, lastStatus }) => {
@@ -194,7 +257,7 @@ test('forceRetry should override delay strategy', async t => {
   await sleep(2000)
 
   if (request) {
-    request.forceRetry() // retry immediately instead of waiting to WAIT_TIME ms after the first attempt
+    request.retryImmediately() // retry immediately instead of waiting to WAIT_TIME ms after the first attempt
   }
 
   const { status, data } = await response
@@ -204,4 +267,8 @@ test('forceRetry should override delay strategy', async t => {
   t.true(+new Date() - now < WAIT_TIME)
   t.falsy(retryStrategy.counter)
   t.falsy(retryStrategy.timeoutId)
+})
+
+test.after('cleanup', t => {
+  console.log(__internal__)
 })
