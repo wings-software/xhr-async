@@ -1,28 +1,19 @@
 import { AxiosRequestConfig } from 'axios';
-/**
- * Key-Value object type.
- */
-export interface KVO {
-    [key: string]: any;
+export interface KVO<T = any> {
+    [key: string]: T;
 }
-/**
- * AbortableXHR, used to set and unset xhr object for fetch cancellation.
- */
-export declare type AbortableXhr = undefined | {
-    abort(): void;
-};
-/**
- * XHR Request.
- */
+export interface XhrRef {
+    abort(options?: {
+        ignoreRetry: boolean;
+    }): void;
+    retryImmediately(): void;
+}
 export interface XhrRequest {
     url?: string;
     params?: KVO;
     headers?: KVO;
     data?: any;
 }
-/**
- * XHR Response.
- */
 export interface XhrResponse {
     status: number;
     statusText: string;
@@ -31,26 +22,21 @@ export interface XhrResponse {
     error?: any;
     request: XhrRequest;
 }
-/**
- * Request Options extends AxiosRequestConfig with xhr setter support.
- * @export
- * @interface RequestOptions
- * @extends {AxiosRequestConfig}
- */
+export declare type XhrRetryAfter = (params: {
+    counter: number;
+    lastStatus: number;
+}) => number;
 export interface XhrOptions extends AxiosRequestConfig {
-    xhr?: (xhr: AbortableXhr) => void;
+    ref?: (request?: XhrRef) => void;
+    group?: string;
+    retry?: number | XhrRetryAfter;
 }
-/**
- * Before Interceptor.
- */
-export interface XhrBeforeInterceptor {
-    (args: XhrRequest): void;
-}
-/**
- * After Interceptor.
- */
-export interface XhrAfterInterceptor {
-    (args: XhrResponse): void;
+export declare type XhrBeforeInterceptor = (args: XhrRequest) => void;
+export declare type XhrAfterInterceptor = (args: XhrResponse) => void;
+export interface RequestTrackingInfo {
+    config: XhrOptions;
+    status?: number;
+    startTime: number;
 }
 export declare function requestFor(method: string): (url: string, options?: XhrOptions) => Promise<XhrResponse>;
 declare const xhr: {
@@ -63,8 +49,12 @@ declare const xhr: {
     options: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
     trace: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
     patch: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
+    abort: (group: string) => void;
     defaults: AxiosRequestConfig;
     before: (interceptor: XhrBeforeInterceptor) => void;
     after: (interceptor: XhrAfterInterceptor) => void;
+    ABORTED: number;
+    TIMEOUT: number;
+    UNREACHABLE: number;
 };
 export default xhr;

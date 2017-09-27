@@ -1,4 +1,4 @@
-import xhr, { XhrRef, XhrRetryStrategy, KVO, __internal__ } from './xhr-async'
+import xhr, { XhrRef, XhrRetryAfter, KVO } from './xhr-async'
 import test from 'ava'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -83,7 +83,7 @@ test('ref should not be null during the request', async t => {
 })
 
 test('ref.abort() should work', async t => {
-  let rootReq: XhrRef
+  let rootReq: XhrRef|undefined
   const url = 'https://httpbin.org/delay/2'
   const headers = { foo: 'bar', hello: 'world' }
   const data = [1, 2, 3, 4]
@@ -151,7 +151,7 @@ test('xhr.group should work', async t => {
 })
 
 test('xhr.retry should work with with abort()', async t => {
-  let request: XhrRef
+  let request: XhrRef|undefined
 
   const response = xhr.get('https://httpbin.org/delay/2', {
     retry: 1,
@@ -188,19 +188,18 @@ test('group should be cleaned when request is done', async t => {
   })
 
   t.is(status, 200)
-  t.falsy(__internal__.xhrGroups[group])
 })
 
 test('abort with ignoreRetry should kill all retries', async t => {
   let count = 0
-  let request: XhrRef
-  const retryStrategy: XhrRetryStrategy & KVO = ({ counter, lastStatus }) => {
+  let request: XhrRef|undefined
+  const retryAfter: XhrRetryAfter & KVO = ({ counter, lastStatus }) => {
     count = counter
-    return counter < 2 ? counter * 10000 : xhr.STOP_RETRYING
+    return counter < 2 ? counter * 10000 : -1
   }
 
   const response = xhr.get('https://httpbin.org/status/401', {
-    retry: retryStrategy,
+    retry: retryAfter,
     ref: req => request = req
   })
 
@@ -217,39 +216,39 @@ test('abort with ignoreRetry should kill all retries', async t => {
 
   t.is(status, xhr.ABORTED)
   t.is(count, 1)
-  t.falsy(retryStrategy.counter)
-  t.falsy(retryStrategy.timeoutId)
+  t.falsy(retryAfter.counter)
+  t.falsy(retryAfter.timeoutId)
 })
 
 test('xhr.retry with delay strategy', async t => {
   let count = 0
-  const retryStrategy: XhrRetryStrategy & KVO = ({ counter, lastStatus }) => {
+  const retryAfter: XhrRetryAfter & KVO = ({ counter, lastStatus }) => {
     count = counter
-    return counter < 2 ? 100 * counter : xhr.STOP_RETRYING
+    return counter < 2 ? 100 * counter : -1
   }
 
   const { status, data } = await xhr.get('https://httpbin.org/status/401', {
-    retry: retryStrategy
+    retry: retryAfter
   })
 
   t.is(status, 401)
   t.is(count, 2)
-  t.falsy(retryStrategy.counter)
-  t.falsy(retryStrategy.timeoutId)
+  t.falsy(retryAfter.counter)
+  t.falsy(retryAfter.timeoutId)
 })
 
-test('forceRetry should override delay strategy', async t => {
+test('retryImmediately should override delay strategy', async t => {
   let count = 0
-  let request: XhrRef
+  let request: XhrRef|undefined
   const WAIT_TIME = 10000
   const now = +new Date()
-  const retryStrategy: XhrRetryStrategy & KVO = ({ counter, lastStatus }) => {
+  const retryAfter: XhrRetryAfter & KVO = ({ counter, lastStatus }) => {
     count = counter
-    return counter === 1 ? WAIT_TIME : (counter <= 4 ? 0 : xhr.STOP_RETRYING) // stop after 5 tries
+    return counter === 1 ? WAIT_TIME : (counter <= 4 ? counter * 10 : -1) // stop after 5 tries
   }
 
   const response = xhr.get('https://httpbin.org/status/401', {
-    retry: retryStrategy,
+    retry: retryAfter,
     ref: req => request = req
   })
 
@@ -265,10 +264,21 @@ test('forceRetry should override delay strategy', async t => {
   t.is(status, 401)
   t.is(count, 5)
   t.true(+new Date() - now < WAIT_TIME)
-  t.falsy(retryStrategy.counter)
-  t.falsy(retryStrategy.timeoutId)
+  t.falsy(retryAfter.counter)
+  t.falsy(retryAfter.timeoutId)
+  t.falsy(retryAfter.retry)
+})
+
+test('xhr properties should be immutable', t => {
+  const x = xhr as KVO
+  t.throws(() => {
+    x.get = null // force to re-assign, this should throw an error
+    x.post = null
+  })
+  t.truthy(x.get)
+  t.truthy(x.post)
 })
 
 test.after('cleanup', t => {
-  console.log(__internal__)
+  // console.log(__internal__)
 })
