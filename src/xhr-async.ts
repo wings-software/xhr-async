@@ -72,7 +72,7 @@ export type XhrAfterInterceptor = (args: XhrResponse) => void
  * Inject an interceptor before a request is being made.
  * @param interceptor interceptor.
  */
-const xhrBefore = (interceptor: XhrBeforeInterceptor) => {
+const before = (interceptor: XhrBeforeInterceptor) => {
   axios.interceptors.request.use(
     (config: XhrOptions) => {
       const { url = '', params, headers, data } = config
@@ -89,7 +89,7 @@ const xhrBefore = (interceptor: XhrBeforeInterceptor) => {
  * Inject an interceptor after a response is returned.
  * @param interceptor interceptor.
  */
-const xhrAfter = (interceptor: XhrAfterInterceptor) => {
+const after = (interceptor: XhrAfterInterceptor) => {
   axios.interceptors.response.use(
     (response: any) => {
       const { status, statusText, headers: responseHeaders, data: responseData, config } = response
@@ -383,8 +383,8 @@ const xhr = {
   // @see https://github.com/mzabriskie/axios#global-axios-defaults
   defaults: axios.defaults,
 
-  before: xhrBefore,
-  after: xhrAfter,
+  before,
+  after,
 
   ABORTED,
   TIMEOUT,
@@ -414,5 +414,5 @@ export default xhr
 // - More tests (binary, stream, etc). Could get from axios' tests
 // - Write README
 // - Plugins:
-//    + Detect null, undefined in url
+//    + Detect null, undefined in url -> warning logs
 //    + Log (track to caller)
