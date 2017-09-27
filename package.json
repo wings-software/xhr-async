@@ -1,6 +1,6 @@
 {
   "name": "xhr-async",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "description": "Async/await ajax APIs with golang-like error handling, built on top of axios",
   "main": "dist/xhr-async.js",
   "types": "dist/xhr-async.d.ts",

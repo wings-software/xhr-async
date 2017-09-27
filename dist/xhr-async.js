@@ -121,10 +121,22 @@ axios_1.default.interceptors.response.use(function (response) {
     delete requests[id];
     return response;
 }, function (error) { return Promise.reject(error); });
+function cleanupRetry(retry, ignoreCounter) {
+    if (ignoreCounter === void 0) { ignoreCounter = true; }
+    var retryAfter = retry && typeof (retry) !== 'number' && retry;
+    if (retryAfter) {
+        if (ignoreCounter) {
+            delete retryAfter.counter;
+        }
+        delete retryAfter.timeoutId;
+        delete retryAfter.retryImmediately;
+        delete retryAfter.cancelRetry;
+    }
+}
 function get(url, options) {
     if (options === void 0) { options = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var _a, status, statusText, responseHeaders, responseData, config, params, data, headers, retry, retryAfter, error_1, response_1, id, request, config_1, status_1, duration, generateErrorResult_1, retryAfter_1, counter, timeoutId, delay_1, cleanup_1;
+        var _a, status, statusText, responseHeaders, responseData, config, params, data, headers, error_1, response_1, id, request, config_1, status_1, duration, generateErrorResult_1, retryAfter_1, counter, timeoutId, delay_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -137,12 +149,7 @@ function get(url, options) {
                 case 2:
                     _a = _b.sent(), status = _a.status, statusText = _a.statusText, responseHeaders = _a.headers, responseData = _a.data, config = _a.config;
                     params = config.params, data = config.data, headers = config.headers;
-                    retry = options.retry;
-                    retryAfter = retry && typeof (retry) !== 'number' && retry;
-                    if (retryAfter) {
-                        delete retryAfter.counter;
-                        delete retryAfter.retryImmediately;
-                    }
+                    cleanupRetry(options.retry);
                     return [2, {
                             status: status,
                             statusText: statusText,
@@ -191,35 +198,26 @@ function get(url, options) {
                                 clearTimeout(timeoutId);
                             }
                             delay_1 = retryAfter_1({ counter: retryAfter_1.counter, lastStatus: status_1 });
-                            cleanup_1 = function (skipCounter) {
-                                if (skipCounter === void 0) { skipCounter = false; }
-                                delete retryAfter_1.timeoutId;
-                                if (!skipCounter) {
-                                    delete retryAfter_1.counter;
-                                }
-                                delete retryAfter_1.retryImmediately;
-                                delete retryAfter_1.cancelRetry;
-                            };
                             if (delay_1 >= 0) {
                                 return [2, new Promise(function (resolve) {
                                         retryAfter_1.timeoutId = setTimeout(function () {
                                             resolve(get(url, options));
-                                            cleanup_1(true);
+                                            cleanupRetry(retryAfter_1, false);
                                         }, delay_1);
                                         retryAfter_1.retryImmediately = function () {
                                             clearTimeout(retryAfter_1.timeoutId);
                                             resolve(get(url, options));
-                                            cleanup_1(true);
+                                            cleanupRetry(retryAfter_1, false);
                                         };
                                         retryAfter_1.cancelRetry = function () {
                                             clearTimeout(retryAfter_1.timeoutId);
-                                            cleanup_1();
+                                            cleanupRetry(retryAfter_1);
                                             resolve(generateErrorResult_1(ABORTED));
                                         };
                                     })];
                             }
                             else {
-                                cleanup_1();
+                                cleanupRetry(retryAfter_1);
                             }
                         }
                     }
@@ -283,4 +281,4 @@ Object.keys(xhr).forEach(function (key) {
 exports.default = xhr;
 //# sourceMappingURL=xhr-async.js.map
 
-xhr.defaults.headers.common['User-Agent'] = 'xhr-async/1.3.4';
+xhr.defaults.headers.common['User-Agent'] = 'xhr-async/1.3.6';
