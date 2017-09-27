@@ -36,14 +36,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var axios_1 = require("axios");
-var xhrBefore = function (interceptor) {
+var before = function (interceptor) {
     axios_1.default.interceptors.request.use(function (config) {
         var _a = config.url, url = _a === void 0 ? '' : _a, params = config.params, headers = config.headers, data = config.data;
         interceptor({ url: url, params: params, headers: headers, data: data });
         return config;
     }, function (error) { return Promise.reject(error); });
 };
-var xhrAfter = function (interceptor) {
+var after = function (interceptor) {
     axios_1.default.interceptors.response.use(function (response) {
         var status = response.status, statusText = response.statusText, responseHeaders = response.headers, responseData = response.data, config = response.config;
         var url = config.url, params = config.params, headers = config.headers, data = config.data;
@@ -264,8 +264,8 @@ var xhr = {
     patch: requestFor('PATCH'),
     abort: abort,
     defaults: axios_1.default.defaults,
-    before: xhrBefore,
-    after: xhrAfter,
+    before: before,
+    after: after,
     ABORTED: ABORTED,
     TIMEOUT: TIMEOUT,
     UNREACHABLE: UNREACHABLE

@@ -3,7 +3,7 @@ import test from 'ava'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-test('defaults', async t => {
+test('defaults should exist', async t => {
   t.truthy(xhr.defaults)
 })
 
