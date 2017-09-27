@@ -408,8 +408,6 @@ Object.keys(xhr).forEach(key =>
 // This constant is exported for testing purposes only
 // export const __internal__ = { xhrGroups, requests }
 
-xhr.defaults.headers.common['User-Agent'] = 'xhr-async' // TODO Add version at build time
-
 export default xhr
 
 //

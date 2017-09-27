@@ -280,6 +280,7 @@ Object.keys(xhr).forEach(function (key) {
         enumerable: true
     });
 });
-xhr.defaults.headers.common['User-Agent'] = 'xhr-async';
 exports.default = xhr;
 //# sourceMappingURL=xhr-async.js.map
+
+xhr.defaults.headers.common['User-Agent'] = 'xhr-async/1.3.4';

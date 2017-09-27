@@ -1,11 +1,11 @@
 {
   "name": "xhr-async",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Async/await ajax APIs with golang-like error handling, built on top of axios",
   "main": "dist/xhr-async.js",
   "types": "dist/xhr-async.d.ts",
   "scripts": {
-    "build": "npm run clean && tsc src/xhr-async.ts --outDir ./dist --sourceMap --target ES5 --lib ES2015 --declaration --removeComments",
+    "build": "npm run clean && tsc src/xhr-async.ts --outDir ./dist --sourceMap --target ES5 --lib ES2015 --declaration --removeComments && bash script/version.sh",
     "dev": "tsc",
     "clean": "rm -rf ./build ./dist",
     "test": "npm run dev && ava --verbose build/*.spec.js",
