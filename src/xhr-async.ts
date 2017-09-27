@@ -415,3 +415,6 @@ export default xhr
 //
 // - More tests (binary, stream, etc). Could get from axios' tests
 // - Write README
+// - Plugins:
+//    + Detect null, undefined in url
+//    + Log (track to caller)
