@@ -17,8 +17,8 @@ export interface XhrRequest {
 export interface XhrResponse {
     status: number;
     statusText: string;
-    data?: any;
     headers?: KVO;
+    response?: any;
     error?: any;
     request: XhrRequest;
 }
@@ -33,6 +33,10 @@ export interface XhrOptions extends AxiosRequestConfig {
 }
 export declare type XhrBeforeInterceptor = (args: XhrRequest) => void;
 export declare type XhrAfterInterceptor = (args: XhrResponse) => void;
+export interface XhrInterceptorOptions {
+    first?: boolean;
+    replaceAll?: boolean;
+}
 export interface RequestTrackingInfo {
     config: XhrOptions;
     status?: number;
@@ -51,8 +55,8 @@ declare const xhr: {
     patch: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
     abort: (group: string) => void;
     defaults: AxiosRequestConfig;
-    before: (interceptor: XhrBeforeInterceptor) => void;
-    after: (interceptor: XhrAfterInterceptor) => void;
+    before: (interceptor: XhrBeforeInterceptor, options?: XhrInterceptorOptions) => void;
+    after: (interceptor: XhrAfterInterceptor) => number;
     ABORTED: number;
     TIMEOUT: number;
     UNREACHABLE: number;
