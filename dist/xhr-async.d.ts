@@ -21,6 +21,7 @@ export interface XhrResponse {
     response?: any;
     error?: any;
     request: XhrRequest;
+    [key: string]: any;
 }
 export declare type XhrRetryAfter = (params: {
     counter: number;
@@ -42,17 +43,22 @@ export interface RequestTrackingInfo {
     status?: number;
     startTime: number;
 }
-export declare function requestFor(method: string): (url: string, options?: XhrOptions) => Promise<XhrResponse>;
+declare global  {
+    interface Promise<T> {
+        as: (as: string) => T;
+    }
+}
+export declare function requestFor(method: string): any;
 declare const xhr: {
-    get: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    post: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    put: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    delete: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    head: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    connect: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    options: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    trace: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
-    patch: (url: string, options?: XhrOptions) => Promise<XhrResponse>;
+    get: any;
+    post: any;
+    put: any;
+    delete: any;
+    head: any;
+    connect: any;
+    options: any;
+    trace: any;
+    patch: any;
     abort: (group: string) => void;
     defaults: AxiosRequestConfig;
     before: (interceptor: XhrBeforeInterceptor, options?: XhrInterceptorOptions) => void;

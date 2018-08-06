@@ -1,6 +1,6 @@
 {
   "name": "xhr-async",
-  "version": "1.4.1",
+  "version": "1.4.4",
   "description": "Async/await ajax APIs with golang-like error handling, built on top of axios",
   "main": "dist/xhr-async.js",
   "types": "dist/xhr-async.d.ts",
@@ -16,7 +16,8 @@
   "author": "Tan Nhu",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.16.2"
+    "axios": "^0.16.2",
+    "proxymise": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "latest",

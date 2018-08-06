@@ -14,7 +14,10 @@
         "interface-name": false,
         "no-unnecessary-initializer": false,
         "variable-name": false,
-        "eofline": false
+        "eofline": false,
+        "max-classes-per-file": false,
+        "member-access": false,
+        "member-ordering": false
     },
     "rulesDirectory": []
 }

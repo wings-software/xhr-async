@@ -1,6 +1,6 @@
 import xhr, { XhrRef, XhrRetryAfter, XhrRequest, XhrResponse, KVO } from './xhr-async'
 import test from 'ava'
-
+import * as proxymise from 'proxymise'
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const includes = (obj1: KVO|undefined, obj2: KVO|undefined): boolean =>
   !!(!obj2 || (obj1 && !Object.keys(obj2).some(key => !obj1[key])))
@@ -26,10 +26,17 @@ test('status code should be legit', async t => {
 })
 
 test('baseURL should work', async t => {
-  xhr.defaults.baseURL = 'https://httpbin.org'
-  const { response, status } = await xhr.get('/ip')
+  const { status } = await xhr.get('https://httpbin.org/ip')
+  t.is(status, 200)
+})
+
+test('as should replace response', async t => {
+  const { status, ip, response } = await xhr.get('https://httpbin.org/ip').as('ip')
 
   t.is(status, 200)
+  t.truthy(ip)
+  t.falsy(response)
+  t.truthy(ip.origin)
 })
 
 test('status code 200', async t => {
@@ -238,7 +245,7 @@ test('abort with ignoreRetry should kill all retries', async t => {
   // hopefully the first attempt has response from httpbin, otherwise
   // this test fails because abort() terminates the first request, not the
   // retrying request
-  await sleep(2500)
+  await sleep(5000)
 
   if (request) {
     request.abort({ ignoreRetry: true })
@@ -286,7 +293,7 @@ test('retryImmediately should override delay strategy', async t => {
 
   // wait a bit for the first attempt to finish (hopefully
   // httpbin returns the first response on-time, otherwise, this test will fail)
-  await sleep(3000)
+  await sleep(5000)
 
   if (request) {
     request.retryImmediately() // retry immediately instead of waiting to WAIT_TIME ms after the first attempt
