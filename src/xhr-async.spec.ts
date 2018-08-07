@@ -1,6 +1,5 @@
 import xhr, { XhrRef, XhrRetryAfter, XhrRequest, XhrResponse, KVO } from './xhr-async'
 import test from 'ava'
-import * as proxymise from 'proxymise'
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const includes = (obj1: KVO|undefined, obj2: KVO|undefined): boolean =>
   !!(!obj2 || (obj1 && !Object.keys(obj2).some(key => !obj1[key])))
