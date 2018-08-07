@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosInterceptorManager, AxiosResponse, AxiosPromise } from 'axios'
-import * as proxymise from 'proxymise'
+import proxymise from './proxymise'
 
-/**
+/*
  * Key-Value object type.
  */
 export interface KVO<T = any> {

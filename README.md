@@ -147,6 +147,4 @@ xhr.after(({ status, statusText, headers, response, error, request }) => {
 })
 ```
 
-### License
-
 MIT
