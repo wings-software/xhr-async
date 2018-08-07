@@ -7,7 +7,7 @@ interface KVO<T = any> {
   [key: string]: T
 }
 
-export default function proxymise(target) {
+function proxymise(target) {
   if (typeof target === 'object') {
     const proxy = () => target;
     (proxy as KVO).__proxy__ = true;
@@ -52,3 +52,5 @@ const get = (target, property, receiver) => {
   }
   return value;
 };
+
+module.exports = proxymise

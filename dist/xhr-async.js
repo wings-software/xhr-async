@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var axios_1 = require("axios");
-var proxymise_1 = require("./proxymise");
+var proxymise = require('./proxymise');
 var beforeInterceptors = [];
 var afterInterceptors = [];
 var before = function (interceptor, options) {
@@ -247,7 +247,7 @@ function ajax(url, options, extra) {
 }
 function requestFor(method) {
     var _this = this;
-    return proxymise_1.default(function (url, options, extra) {
+    return proxymise(function (url, options, extra) {
         if (options === void 0) { options = {}; }
         return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {

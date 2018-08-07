@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosInterceptorManager, AxiosResponse, AxiosPromise } from 'axios'
-import proxymise from './proxymise'
+const proxymise = require('./proxymise') // tslint:disable-line
 
 /*
  * Key-Value object type.
