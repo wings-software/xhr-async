@@ -299,4 +299,4 @@ Object.keys(xhr).forEach(function (key) {
 exports.default = xhr;
 //# sourceMappingURL=xhr-async.js.map
 
-if (typeof(window) === 'undefined') { xhr.defaults.headers.common['User-Agent'] = 'xhr-async/1.4.6' }
+if (typeof(window) === 'undefined') { xhr.defaults.headers.common['User-Agent'] = 'xhr-async/1.4.7' }
