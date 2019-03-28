@@ -23,7 +23,8 @@ export interface XhrRequest {
   url?: string
   params?: KVO
   headers?: KVO
-  data?: any
+  data?: any,
+  options?: KVO
 }
 
 /**
@@ -254,7 +255,7 @@ async function ajax(url: string, options: XhrOptions = {}, extra?: KVO): Promise
   options.headers = options.headers || {}
 
   beforeInterceptors.forEach(interceptor =>
-    interceptor({ url, headers: options.headers, params: options.params, data: options.data }))
+    interceptor({ url, headers: options.headers, params: options.params, data: options.data, options }))
 
   try {
     const { status, statusText, headers: responseHeaders, data: responseData, config } = await axios(options)

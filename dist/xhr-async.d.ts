@@ -13,6 +13,7 @@ export interface XhrRequest {
     params?: KVO;
     headers?: KVO;
     data?: any;
+    options?: KVO;
 }
 export interface XhrResponse {
     status: number;

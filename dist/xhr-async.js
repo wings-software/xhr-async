@@ -139,7 +139,7 @@ function ajax(url, options, extra) {
                     options.url = url;
                     options.headers = options.headers || {};
                     beforeInterceptors.forEach(function (interceptor) {
-                        return interceptor({ url: url, headers: options.headers, params: options.params, data: options.data });
+                        return interceptor({ url: url, headers: options.headers, params: options.params, data: options.data, options: options });
                     });
                     _b.label = 1;
                 case 1:
@@ -299,4 +299,4 @@ Object.keys(xhr).forEach(function (key) {
 exports.default = xhr;
 //# sourceMappingURL=xhr-async.js.map
 
-if (typeof(window) === 'undefined') { xhr.defaults.headers.common['User-Agent'] = 'xhr-async/1.4.7' }
+if (typeof(window) === 'undefined') { xhr.defaults.headers.common['User-Agent'] = 'xhr-async/1.4.8' }
