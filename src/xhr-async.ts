@@ -42,7 +42,7 @@ export interface XhrResponse<T> {
   extra?: any
 }
 
-export interface ExtendedPromise<T extends XhrResponse<any>> extends Promise<T> {
+export interface XhrPromise<T extends XhrResponse<any>> extends Promise<T> {
   as<U extends string>(key: U): Promise<Omit<T, 'response'> & Record<U, T['response']> & { response: undefined }>
 }
 
@@ -370,7 +370,7 @@ async function ajax<T>(url: string, options: XhrOptions = {}, extra?: KVO): Prom
   })
 }
 
-export type Request = <T, U = any>(url: string, options?: XhrOptions<U>, extra?: KVO) => ExtendedPromise<XhrResponse<T>>
+export type Request = <T, U = any>(url: string, options?: XhrOptions<U>, extra?: KVO) => XhrPromise<XhrResponse<T>>
 
 export function requestFor(method: Method): Request {
   return proxymise(
