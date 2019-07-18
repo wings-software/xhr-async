@@ -7,21 +7,21 @@ interface KVO<T = any> {
   [key: string]: T
 }
 
-export default function proxymise(target) {
+export default function proxymise<T, U = any>(target: T): T & U {
   if (typeof target === 'object') {
-    const proxy = () => target;
-    (proxy as KVO).__proxy__ = true;
-    return new Proxy(proxy, handler);
+    const proxy = () => target
+    ;(proxy as KVO).__proxy__ = true
+    return new Proxy(proxy, handler)
   }
-  return typeof target === 'function' ? new Proxy(target, handler) : target;
-};
+  return typeof target === 'function' ? new Proxy(target, handler) : target
+}
 
-const handler = {
+const handler: ProxyHandler<any> = {
   construct(target, argumentsList) {
     if ((target as KVO).__proxy__) {
       target = target()
     }
-    return proxymise(Reflect.construct(target, argumentsList));
+    return proxymise(Reflect.construct(target, argumentsList))
   },
 
   get(target, property, receiver) {
@@ -29,9 +29,9 @@ const handler = {
       target = target()
     }
     if (property !== 'then' && property !== 'catch' && typeof target.then === 'function') {
-      return proxymise(target.then(value => get(value, property, receiver)));
+      return proxymise(target.then((value: any) => get(value, property, receiver)))
     }
-    return proxymise(get(target, property, receiver));
+    return proxymise(get(target, property, receiver))
   },
 
   apply(target, thisArg, argumentsList) {
@@ -39,16 +39,16 @@ const handler = {
       target = target()
     }
     if (typeof target.then === 'function') {
-      return proxymise(target.then(value => Reflect.apply(value, thisArg, argumentsList)));
+      return proxymise(target.then((value: any) => Reflect.apply(value, thisArg, argumentsList)))
     }
-    return proxymise(Reflect.apply(target, thisArg, argumentsList));
+    return proxymise(Reflect.apply(target, thisArg, argumentsList))
   }
-};
+}
 
-const get = (target, property, receiver) => {
-  const value = typeof target === 'object' ? Reflect.get(target, property, receiver) : target[property];
+const get = (target: any, property: string | number | symbol, receiver: any) => {
+  const value = typeof target === 'object' ? Reflect.get(target, property, receiver) : target[property]
   if (typeof value === 'function' && typeof value.bind === 'function') {
-    return Object.assign(value.bind(target), value);
+    return Object.assign(value.bind(target), value)
   }
-  return value;
-};
+  return value
+}

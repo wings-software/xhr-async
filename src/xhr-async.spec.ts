@@ -1,7 +1,7 @@
 import xhr, { XhrRef, XhrRetryAfter, XhrRequest, XhrResponse, KVO } from './xhr-async'
 import test from 'ava'
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-const includes = (obj1: KVO|undefined, obj2: KVO|undefined): boolean =>
+const includes = (obj1: KVO | undefined, obj2: KVO | undefined): boolean =>
   !!(!obj2 || (obj1 && !Object.keys(obj2).some(key => !obj1[key])))
 
 test('defaults should exist', async t => {
@@ -10,7 +10,7 @@ test('defaults should exist', async t => {
 
 test('should not raise exception when server is not found', async t => {
   try {
-    const { response, status, error, statusText } = await xhr.get('https://notavalidurl.com1/')
+    const { status } = await xhr.get('https://notavalidurl.com1/')
     t.is(status, 0)
   } catch (error) {
     t.fail('request should not raise exception, ever.')
@@ -19,7 +19,7 @@ test('should not raise exception when server is not found', async t => {
 
 test('status code should be legit', async t => {
   const code = 418
-  const { response, status, error, statusText } = await xhr.get('https://httpbin.org/status/' + code)
+  const { status } = await xhr.get('https://httpbin.org/status/' + code)
 
   t.is(status, code)
 })
@@ -30,7 +30,7 @@ test('baseURL should work', async t => {
 })
 
 test('as should replace response', async t => {
-  const { status, ip, response } = await xhr.get('https://httpbin.org/ip').as('ip')
+  const { status, ip, response } = await xhr.get<{ origin: string }>('https://httpbin.org/ip').as('ip')
 
   t.is(status, 200)
   t.truthy(ip)
@@ -63,10 +63,10 @@ test('should set header correctly with before()', async t => {
 })
 
 test('should set request object properly', async t => {
-  let request
+  let request: any
 
   const { response, status } = await xhr.get('https://httpbin.org/', {
-    ref: req => request = req
+    ref: req => (request = req)
   })
 
   t.is(status, 200)
@@ -109,7 +109,7 @@ test('ref should not be null during the request', async t => {
   let rootRequest
 
   const response = xhr.get('https://httpbin.org/delay/2', {
-    ref: req => rootRequest = req
+    ref: req => (rootRequest = req)
   })
 
   await sleep(1)
@@ -123,7 +123,7 @@ test('ref should not be null during the request', async t => {
 })
 
 test('ref.abort() should work', async t => {
-  let rootReq: XhrRef|undefined
+  let rootReq: XhrRef | undefined
   const url = 'https://httpbin.org/delay/2'
   const headers = { foo: 'bar', hello: 'world' }
   const data = [1, 2, 3, 4]
@@ -133,7 +133,7 @@ test('ref.abort() should work', async t => {
     headers,
     params,
     data,
-    ref: req => rootReq = req
+    ref: req => (rootReq = req)
   })
 
   await sleep(1)
@@ -144,7 +144,11 @@ test('ref.abort() should work', async t => {
     rootReq.abort()
   }
 
-  const { status, request: { url: _url, params: _params, data: _data, headers: _headers }, request } = await xhrResponse
+  const {
+    status,
+    request: { url: _url, params: _params, data: _data, headers: _headers },
+    request
+  } = await xhrResponse
 
   t.is(status, xhr.ABORTED)
   t.is(rootReq, undefined) // abort() should also unset xhr
@@ -160,7 +164,7 @@ test('ref.abort() should work', async t => {
 test('should unset ref when an exception happens', async t => {
   let rootReq
   const { status } = await xhr.get('https://notavalidurl.com1/', {
-    ref: req => rootReq = req
+    ref: req => (rootReq = req)
   })
 
   t.is(status, xhr.UNREACHABLE)
@@ -173,7 +177,7 @@ test('xhr.group should work', async t => {
 
   const response = xhr.get('https://httpbin.org/delay/2', {
     group,
-    ref: req => request = req
+    ref: req => (request = req)
   })
 
   await sleep(1) // wait a bit to initialize the request
@@ -189,11 +193,11 @@ test('xhr.group should work', async t => {
 })
 
 test('xhr.retry should work with with abort()', async t => {
-  let request: XhrRef|undefined
+  let request: XhrRef | undefined
 
   const res = xhr.get('https://httpbin.org/delay/2', {
     retry: 1,
-    ref: req => request = req
+    ref: req => (request = req)
   })
 
   await sleep(1) // wait a bit to initialize the request
@@ -230,7 +234,7 @@ test('group should be cleaned when request is done', async t => {
 
 test('abort with ignoreRetry should kill all retries', async t => {
   let count = 0
-  let request: XhrRef|undefined
+  let request: XhrRef | undefined
   const retryAfter: XhrRetryAfter & KVO = ({ counter, lastStatus }) => {
     count = counter
     return counter < 2 ? counter * 10000 : -1
@@ -238,7 +242,7 @@ test('abort with ignoreRetry should kill all retries', async t => {
 
   const response = xhr.get('https://httpbin.org/status/401', {
     retry: retryAfter,
-    ref: req => request = req
+    ref: req => (request = req)
   })
 
   // hopefully the first attempt has response from httpbin, otherwise
@@ -277,17 +281,17 @@ test('xhr.retry with delay strategy', async t => {
 
 test('retryImmediately should override delay strategy', async t => {
   let count = 0
-  let request: XhrRef|undefined
+  let request: XhrRef | undefined
   const WAIT_TIME = 10000
   const now = +new Date()
   const retryAfter: XhrRetryAfter & KVO = ({ counter, lastStatus }) => {
     count = counter
-    return counter === 1 ? WAIT_TIME : (counter <= 4 ? counter * 10 : -1) // stop after 5 tries
+    return counter === 1 ? WAIT_TIME : counter <= 4 ? counter * 10 : -1 // stop after 5 tries
   }
 
   const response = xhr.get('https://httpbin.org/status/401', {
     retry: retryAfter,
-    ref: req => request = req
+    ref: req => (request = req)
   })
 
   // wait a bit for the first attempt to finish (hopefully
@@ -319,20 +323,23 @@ test('xhr properties should be immutable', t => {
 })
 
 test('before should be called before a request is made', async t => {
-  const url = 'https://httpbin.org/anything/before-anything-' + (+new Date())
+  const url = 'https://httpbin.org/anything/before-anything-' + +new Date()
   const data = { a: 1, b: 2 }
   const params = { abc: 1, def: 2 }
   const headers = { 'x-auth': true }
   let requestTime
   let beforeTime
-  let xhrRequest: XhrRequest|undefined
+  let xhrRequest: XhrRequest | undefined
 
-  xhr.before(({ url: _url, params: _params, headers: _headers, data: _data }) => {
-    if (_url === url) {
-      beforeTime = +new Date()
-      xhrRequest = { url: _url, params: _params, headers: _headers, data: _data }
-    }
-  }, { replaceAll: true })
+  xhr.before(
+    ({ url: _url, params: _params, headers: _headers, data: _data }) => {
+      if (_url === url) {
+        beforeTime = +new Date()
+        xhrRequest = { url: _url, params: _params, headers: _headers, data: _data }
+      }
+    },
+    { replaceAll: true }
+  )
 
   await xhr.post(url, {
     params,
@@ -378,9 +385,9 @@ test('after should be called after a failure', async t => {
   const url = 'https://httpbin.org/status/401'
   const params = { name: 'J', age: 10 }
   const headers = { Authorization: 'Bearer 123' }
-  let xhrResponse: XhrResponse|undefined
+  let xhrResponse: XhrResponse<any> | undefined
 
-  xhr.after(_xhrResponse => xhrResponse = _xhrResponse)
+  xhr.after(_xhrResponse => (xhrResponse = _xhrResponse))
 
   await xhr.post(url, {
     headers,
