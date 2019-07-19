@@ -9,7 +9,7 @@
     "dev": "tsc",
     "clean": "rm -rf ./build ./dist",
     "test": "npm run dev && ava --verbose build/*.spec.js",
-    "format": "prettier src/*.{js,ts}",
+    "format": "prettier --write src/*.{js,ts}",
     "watch": "chokidar 'src/**/*.*' -c 'npm run test'"
   },
   "keywords": [],
@@ -19,11 +19,11 @@
     "axios": "^0.16.2"
   },
   "devDependencies": {
-    "prettier": "^1.14.0",
-    "tslint": "^5.11.0",
-    "@types/node": "^10.5.7",
-    "ava": "^0.22.0",
-    "chokidar-cli": "latest",
-    "typescript": "latest"
+    "@types/node": "^12.0.10",
+    "ava": "^2.1.0",
+    "chokidar-cli": "1.2.2",
+    "prettier": "^1.18.2",
+    "tslint": "^5.18.0",
+    "typescript": "3.5.2"
   }
 }
