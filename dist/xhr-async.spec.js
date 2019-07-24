@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -49,18 +49,18 @@ ava_1.default('defaults should exist', function (t) { return __awaiter(_this, vo
     });
 }); });
 ava_1.default('should not raise exception when server is not found', function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var _a, response, status, error, statusText, error_1;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var status, error_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
-                _b.trys.push([0, 2, , 3]);
+                _a.trys.push([0, 2, , 3]);
                 return [4, xhr_async_1.default.get('https://notavalidurl.com1/')];
             case 1:
-                _a = _b.sent(), response = _a.response, status = _a.status, error = _a.error, statusText = _a.statusText;
+                status = (_a.sent()).status;
                 t.is(status, 0);
                 return [3, 3];
             case 2:
-                error_1 = _b.sent();
+                error_1 = _a.sent();
                 t.fail('request should not raise exception, ever.');
                 return [3, 3];
             case 3: return [2];
@@ -68,14 +68,14 @@ ava_1.default('should not raise exception when server is not found', function (t
     });
 }); });
 ava_1.default('status code should be legit', function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var code, _a, response, status, error, statusText;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var code, status;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
                 code = 418;
                 return [4, xhr_async_1.default.get('https://httpbin.org/status/' + code)];
             case 1:
-                _a = _b.sent(), response = _a.response, status = _a.status, error = _a.error, statusText = _a.statusText;
+                status = (_a.sent()).status;
                 t.is(status, code);
                 return [2];
         }
@@ -150,7 +150,7 @@ ava_1.default('should set request object properly', function (t) { return __awai
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0: return [4, xhr_async_1.default.get('https://httpbin.org/', {
-                    ref: function (req) { return request = req; }
+                    ref: function (req) { return (request = req); }
                 })];
             case 1:
                 _a = _b.sent(), response = _a.response, status = _a.status;
@@ -226,7 +226,7 @@ ava_1.default('ref should not be null during the request', function (t) { return
         switch (_a.label) {
             case 0:
                 response = xhr_async_1.default.get('https://httpbin.org/delay/2', {
-                    ref: function (req) { return rootRequest = req; }
+                    ref: function (req) { return (rootRequest = req); }
                 });
                 return [4, sleep(1)];
             case 1:
@@ -254,7 +254,7 @@ ava_1.default('ref.abort() should work', function (t) { return __awaiter(_this, 
                     headers: headers,
                     params: params,
                     data: data,
-                    ref: function (req) { return rootReq = req; }
+                    ref: function (req) { return (rootReq = req); }
                 });
                 return [4, sleep(1)];
             case 1:
@@ -283,7 +283,7 @@ ava_1.default('should unset ref when an exception happens', function (t) { retur
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4, xhr_async_1.default.get('https://notavalidurl.com1/', {
-                    ref: function (req) { return rootReq = req; }
+                    ref: function (req) { return (rootReq = req); }
                 })];
             case 1:
                 status = (_a.sent()).status;
@@ -301,7 +301,7 @@ ava_1.default('xhr.group should work', function (t) { return __awaiter(_this, vo
                 group = 'httpbin';
                 response = xhr_async_1.default.get('https://httpbin.org/delay/2', {
                     group: group,
-                    ref: function (req) { return request = req; }
+                    ref: function (req) { return (request = req); }
                 });
                 return [4, sleep(1)];
             case 1:
@@ -324,7 +324,7 @@ ava_1.default('xhr.retry should work with with abort()', function (t) { return _
             case 0:
                 res = xhr_async_1.default.get('https://httpbin.org/delay/2', {
                     retry: 1,
-                    ref: function (req) { return request = req; }
+                    ref: function (req) { return (request = req); }
                 });
                 return [4, sleep(1)];
             case 1:
@@ -385,7 +385,7 @@ ava_1.default('abort with ignoreRetry should kill all retries', function (t) { r
                 };
                 response = xhr_async_1.default.get('https://httpbin.org/status/401', {
                     retry: retryAfter,
-                    ref: function (req) { return request = req; }
+                    ref: function (req) { return (request = req); }
                 });
                 return [4, sleep(5000)];
             case 1:
@@ -439,11 +439,11 @@ ava_1.default('retryImmediately should override delay strategy', function (t) { 
                 retryAfter = function (_a) {
                     var counter = _a.counter, lastStatus = _a.lastStatus;
                     count = counter;
-                    return counter === 1 ? WAIT_TIME : (counter <= 4 ? counter * 10 : -1);
+                    return counter === 1 ? WAIT_TIME : counter <= 4 ? counter * 10 : -1;
                 };
                 response = xhr_async_1.default.get('https://httpbin.org/status/401', {
                     retry: retryAfter,
-                    ref: function (req) { return request = req; }
+                    ref: function (req) { return (request = req); }
                 });
                 return [4, sleep(5000)];
             case 1:
@@ -478,7 +478,7 @@ ava_1.default('before should be called before a request is made', function (t) {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                url = 'https://httpbin.org/anything/before-anything-' + (+new Date());
+                url = 'https://httpbin.org/anything/before-anything-' + +new Date();
                 data = { a: 1, b: 2 };
                 params = { abc: 1, def: 2 };
                 headers = { 'x-auth': true };
@@ -543,7 +543,7 @@ ava_1.default('after should be called after a failure', function (t) { return __
                 url = 'https://httpbin.org/status/401';
                 params = { name: 'J', age: 10 };
                 headers = { Authorization: 'Bearer 123' };
-                xhr_async_1.default.after(function (_xhrResponse) { return xhrResponse = _xhrResponse; });
+                xhr_async_1.default.after(function (_xhrResponse) { return (xhrResponse = _xhrResponse); });
                 return [4, xhr_async_1.default.post(url, {
                         headers: headers,
                         params: params,
