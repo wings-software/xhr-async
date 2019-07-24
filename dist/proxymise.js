@@ -9,7 +9,6 @@ function proxymise(target) {
     return typeof target === 'function' ? new Proxy(target, handler) : target;
 }
 exports.default = proxymise;
-;
 var handler = {
     construct: function (target, argumentsList) {
         if (target.__proxy__) {
