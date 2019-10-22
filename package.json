@@ -1,16 +1,18 @@
 {
-  "name": "xhr-async",
-  "version": "1.4.8",
+  "name": "@wings-software/xhr-async",
+  "version": "2.0.0",
   "description": "Async/await ajax APIs with golang-like error handling, built on top of axios",
   "main": "dist/xhr-async.js",
   "types": "dist/xhr-async.d.ts",
+  "repository": "https://github.com/wings-software/xhr-async",
   "scripts": {
     "build": "npm run clean && tsc src/*.ts --outDir ./dist --sourceMap --target ES5 --lib ES2015 --declaration --removeComments && bash script/version.sh",
     "dev": "tsc",
     "clean": "rm -rf ./build ./dist",
     "test": "npm run dev && ava --verbose build/*.spec.js",
     "format": "prettier --write src/*.{js,ts}",
-    "watch": "chokidar 'src/**/*.*' -c 'npm run test'"
+    "watch": "chokidar 'src/**/*.*' -c 'npm run test'",
+    "prepublishOnly": "yarn test && yarn build"
   },
   "keywords": [],
   "author": "Tan Nhu",
