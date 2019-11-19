@@ -12,3 +12,5 @@ jobs:
           npm install
           npm run test
           npm run build
+          echo ${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$ > ~/.npmrc
+          npm publish

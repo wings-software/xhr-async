@@ -5,6 +5,9 @@
   "main": "dist/xhr-async.js",
   "types": "dist/xhr-async.d.ts",
   "repository": "https://github.com/wings-software/xhr-async",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "scripts": {
     "build": "npm run clean && tsc src/*.ts --outDir ./dist --sourceMap --target ES5 --lib ES2015 --declaration --removeComments && bash script/version.sh",
     "dev": "tsc",
