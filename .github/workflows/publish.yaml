@@ -12,5 +12,7 @@ jobs:
           npm install
           npm run test
           npm run build
-          echo ${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$ > ~/.npmrc
+          echo "@wings-software:registry=https://npm.pkg.github.com" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$" >> ~/.npmrc
+          echo "always-auth=true" >> ~/.npmrc
           npm publish
