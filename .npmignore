@@ -1,0 +1,21 @@
+#
+# This file ensures `npm publish` only packages files in ./dist
+# and nothing else
+#
+.vscode
+build
+.github
+script
+src
+dist/*.spec.*
+.gitignore
+.eslintignore
+.npm*
+.eslintrc
+.prettierrc.yml
+.stylelintrc
+README.md
+LICENSE.txt
+tsconfig.json
+tslint.json
+yarn*
