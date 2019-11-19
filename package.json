@@ -11,8 +11,7 @@
     "clean": "rm -rf ./build ./dist",
     "test": "npm run dev && ava --verbose build/*.spec.js",
     "format": "prettier --write src/*.{js,ts}",
-    "watch": "chokidar 'src/**/*.*' -c 'npm run test'",
-    "prepublishOnly": "yarn test && yarn build"
+    "watch": "chokidar 'src/**/*.*' -c 'npm run test'"
   },
   "keywords": [],
   "author": "Tan Nhu",
