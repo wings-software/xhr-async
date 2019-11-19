@@ -7,15 +7,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
-      - name: Test, Build, and Publish
+      - name: "Setup Node"
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://npm.pkg.github.com/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test
         run: |
           npm install
           npm run test
+          npm publish
+      - name: Build
+        run: |
           npm run build
-          echo "@wings-software:registry=https://npm.pkg.github.com" > ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$" >> ~/.npmrc
-          echo "always-auth=true" >> ~/.npmrc
-          cat ~/.npmrc
+      - name: Publish
+        run: |
           npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}$
