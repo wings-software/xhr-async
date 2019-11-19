@@ -1,8 +1,8 @@
-name: Publish
+name: Test, Build, and Publish
 on: [push]
 jobs:
   build:
-    name: Build and Publish
+    name: Test, Build, and Publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -13,8 +13,6 @@ jobs:
           node-version: 12
           registry-url: https://npm.pkg.github.com/
           scope: "@wings-software"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}
       - name: Test
         run: |
           npm install
@@ -24,9 +22,5 @@ jobs:
           npm run build
       - name: Publish
         run: |
-          echo @wings-software:registry=https://npm.pkg.github.com/ > ~/.npmrc
-          echo //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$ >> ~/.npmrc
-          echo always-auth=true >> ~/.npmrc
+          echo ${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$ >> ~/.npmrc
           npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_HARNESS_BOT_TOKEN }}$
