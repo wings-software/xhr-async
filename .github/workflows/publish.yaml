@@ -9,5 +9,6 @@ jobs:
         uses: actions/checkout@v1
       - name: Test, Build, and Publish
         run: |
+          npm install
           npm run test
           npm run build
