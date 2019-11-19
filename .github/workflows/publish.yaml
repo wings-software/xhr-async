@@ -23,6 +23,7 @@ jobs:
           npm run build
       - name: Publish
         run: |
+          echo @wings-software:registry=https://npm.pkg.github.com/ >> .npmrc
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}$
