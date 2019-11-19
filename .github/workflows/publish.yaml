@@ -21,9 +21,6 @@ jobs:
         run: |
           npm run build
       - name: Publish
-        run: |
-          echo @wings-software:registry=https://npm.pkg.github.com > ~/.npmrc
-          echo //npm.pkg.github.com/:_authToken=6757cd18bb54ab86e290fdfc255c4443dd7fb453 >> ~/.npmrc
-          echo always-auth=true  >> ~/.npmrc
-          cat ~/.npmrc
-          npm publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_HARNESS_BOT_TOKEN}}
