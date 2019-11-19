@@ -1,5 +1,7 @@
 name: Test, Build, and Publish
 on: [push]
+branches:
+  - master
 jobs:
   build:
     name: Test, Build, and Publish
