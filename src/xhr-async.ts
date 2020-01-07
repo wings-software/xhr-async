@@ -357,15 +357,25 @@ async function ajax<T>(url: string, options: XhrOptions = {}, extra?: KVO): Prom
 
   afterInterceptors.forEach(interceptor => interceptor(xhrResponse))
 
+  const getterWithTracking = (target, prop) => {
+    target.proxyCountForField = target.proxyCountForField || ((field: string) => target.proxyCountForField[field])
+    target.proxyCountForField[prop] = (target.proxyCountForField[prop] || 0) + 1
+
+    return (target as KVO)[prop]
+  }
+
   return new Proxy(xhrResponse, {
-    get: (target, name: string) => {
-      return name === 'as'
+    get: (target, prop: string) => {
+      return prop === 'as'
         ? (as: string) => {
             ;(xhrResponse as KVO)[as] = xhrResponse.response
             delete xhrResponse.response
-            return xhrResponse
+
+            return new Proxy(xhrResponse, {
+              get: (target, prop: string) => getterWithTracking(target, prop)
+            })
           }
-        : (target as KVO)[name]
+        : getterWithTracking(target, prop)
     }
   })
 }

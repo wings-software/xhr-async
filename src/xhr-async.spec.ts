@@ -282,8 +282,8 @@ test('xhr.retry with delay strategy', async t => {
 test('retryImmediately should override delay strategy', async t => {
   let count = 0
   let request: XhrRef | undefined
-  const WAIT_TIME = 10000
-  const now = +new Date()
+  const WAIT_TIME = 15000
+  const now = Date.now()
   const retryAfter: XhrRetryAfter & KVO = ({ counter, lastStatus }) => {
     count = counter
     return counter === 1 ? WAIT_TIME : counter <= 4 ? counter * 10 : -1 // stop after 5 tries
@@ -306,7 +306,7 @@ test('retryImmediately should override delay strategy', async t => {
 
   t.is(status, 401)
   t.is(count, 5)
-  t.true(+new Date() - now < WAIT_TIME)
+  t.true(Date.now() - now < WAIT_TIME)
   t.falsy(retryAfter.counter)
   t.falsy(retryAfter.timeoutId)
   t.falsy(retryAfter.retry)
