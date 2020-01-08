@@ -29,13 +29,12 @@ test('baseURL should work', async t => {
   t.is(status, 200)
 })
 
-test('as should replace response', async t => {
+test('as should result the same as response', async t => {
   const { status, ip, response } = await xhr.get<{ origin: string }>('https://httpbin.org/ip').as('ip')
 
   t.is(status, 200)
   t.truthy(ip)
-  t.falsy(response)
-  t.truthy(ip.origin)
+  t.deepEqual(ip, response)
 })
 
 test('status code 200', async t => {
