@@ -368,11 +368,9 @@ async function ajax<T>(url: string, options: XhrOptions = {}, extra?: KVO): Prom
     get: (target, prop: string) => {
       return prop === 'as'
         ? (as: string) => {
-            ;(xhrResponse as KVO)[as] = xhrResponse.response
-            delete xhrResponse.response
-
+            xhrResponse[as] = xhrResponse.response
             return new Proxy(xhrResponse, {
-              get: (target, prop: string) => getterWithTracking(target, prop)
+              get: (_target, _prop: string) => getterWithTracking(_target, _prop)
             })
           }
         : getterWithTracking(target, prop)
