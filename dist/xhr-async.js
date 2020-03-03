@@ -132,7 +132,7 @@ function cleanupRetry(retry, ignoreCounter) {
 function ajax(url, options, extra) {
     if (options === void 0) { options = {}; }
     return __awaiter(this, void 0, void 0, function () {
-        var xhrResponse, id, _a, status, statusText, responseHeaders, responseData, config, params, data, headers, error_1, response_1, headers_1, request, config_1, status_1, duration, generateErrorResult_1, retryAfter_1, counter, timeoutId, delay_1;
+        var xhrResponse, id, _a, status, statusText, responseHeaders, responseData, config, params, data, headers, error_1, response_1, headers_1, request, config_1, status_1, duration, generateErrorResult_1, retryAfter_1, counter, timeoutId, delay_1, getterWithTracking;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -231,16 +231,21 @@ function ajax(url, options, extra) {
                     return [3, 4];
                 case 4:
                     afterInterceptors.forEach(function (interceptor) { return interceptor(xhrResponse); });
+                    getterWithTracking = function (target, prop) {
+                        target.proxyCountForField = target.proxyCountForField || (function (field) { return target.proxyCountForField[field]; });
+                        target.proxyCountForField[prop] = (target.proxyCountForField[prop] || 0) + 1;
+                        return target[prop];
+                    };
                     return [2, new Proxy(xhrResponse, {
-                            get: function (target, name) {
-                                return name === 'as'
+                            get: function (target, prop) {
+                                return prop === 'as'
                                     ? function (as) {
-                                        ;
                                         xhrResponse[as] = xhrResponse.response;
-                                        delete xhrResponse.response;
-                                        return xhrResponse;
+                                        return new Proxy(xhrResponse, {
+                                            get: function (_target, _prop) { return getterWithTracking(_target, _prop); }
+                                        });
                                     }
-                                    : target[name];
+                                    : getterWithTracking(target, prop);
                             }
                         })];
             }
@@ -301,4 +306,4 @@ Object.keys(xhr).forEach(function (key) {
 exports.default = xhr;
 //# sourceMappingURL=xhr-async.js.map
 
-if (typeof(window) === 'undefined') { xhr.defaults.headers.common['User-Agent'] = 'xhr-async/2.0.1' }
+if (typeof(window) === 'undefined') { xhr.defaults.headers.common['User-Agent'] = 'xhr-async/2.0.7' }
