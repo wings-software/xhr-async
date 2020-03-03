@@ -22,6 +22,7 @@ export interface XhrResponse<T> {
     headers?: KVO;
     response?: T;
     error?: any;
+    errors?: KVO[];
     request: XhrRequest;
     extra?: any;
 }
